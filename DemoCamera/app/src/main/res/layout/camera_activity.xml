@@ -82,7 +82,6 @@
             app:backgroundTint="@android:color/white"
             app:fabSize="normal"
             app:layout_constraintEnd_toStartOf="@+id/cameraView"
-            app:layout_constraintHorizontal_bias="0.54"
             app:layout_constraintStart_toEndOf="@+id/cameraView"
             app:layout_constraintTop_toTopOf="parent" />
 
