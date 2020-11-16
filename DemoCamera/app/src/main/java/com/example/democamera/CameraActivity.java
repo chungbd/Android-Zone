@@ -1,21 +1,14 @@
 package com.example.democamera;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.PointF;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -33,14 +26,14 @@ import com.otaliastudios.cameraview.CameraException;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraLogger;
 import com.otaliastudios.cameraview.CameraOptions;
-import com.otaliastudios.cameraview.CameraUtils;
 import com.otaliastudios.cameraview.CameraView;
 import com.otaliastudios.cameraview.PictureResult;
 import com.otaliastudios.cameraview.VideoResult;
 import com.otaliastudios.cameraview.controls.Flash;
-import com.otaliastudios.cameraview.filter.Filters;
+
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 
@@ -60,6 +53,9 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
     ImageCallback callBackImage;
     CustomProgressBar customProgressBar;
     boolean isShowProgress = false;
+
+    ImageWorker imageWorker;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,6 +91,27 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 //        findViewById(R.id.fab_done).setOnClickListener(this);
 //        findViewById(R.id.fab_cancel).setOnClickListener(this);
 
+
+        File directory = this.getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File myDir = new File(directory + "/PTI");
+        myDir.mkdirs();
+
+        imageWorker = new ImageWorker(myDir);
+
+        imageWorker.setCompleteProcess(new ProcessHanded() {
+            @Override
+            public void onProcessing(boolean status) {
+                Log.i("setCompleteProcess",String.valueOf(status));
+            }
+        });
+
+        imageWorker.setOnCompleteImageProcess(new ImageProcessHanded() {
+
+            @Override
+            public void onComplete(@NotNull ImageInfor info) {
+                Log.i("setCompleteProcess",String.valueOf(info));
+            }
+        });
     }
 
     @Override
@@ -136,52 +153,16 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
         public void onPictureTaken(@NonNull PictureResult result) {
             super.onPictureTaken(result);
             try {
-//                Bitmap bimap = BitmapFactory.decodeByteArray(result.getData(),0,result.getData().length);
-
                 result.toBitmap(new BitmapCallback() {
 
                     @Override
                     public void onBitmapReady(final Bitmap bitmap) {
-                        if (numberPicture > 14){
-                            return;
-                        }
-                        if(bitmap.getWidth() > bitmap.getHeight()){
-                            numberPicture += 1;
-                            textNumberPicture.setText(String.valueOf(numberPicture));
-                            imageView.setImageBitmap(bitmap);
+                        imageWorker.addBitmap(bitmap);
 
-                            new Thread( new Runnable() { @Override public void run() {
-                                int maxHeight = 2000;
-                                int maxWidth = 4000;
-                                float scale = Math.min(((float)maxHeight / bitmap.getWidth()), ((float)maxWidth / bitmap.getHeight()));
+                        numberPicture += 1;
+                        textNumberPicture.setText(String.valueOf(numberPicture));
+                        imageView.setImageBitmap(bitmap);
 
-                                Matrix matrix = new Matrix();
-                                matrix.postScale(scale, scale);
-
-                                Bitmap bitmapResize =  Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                                String root = Environment.getExternalStorageDirectory().getAbsolutePath();
-                                File myDir = new File(root + "/PTI");
-                                myDir.mkdirs();
-
-                                String fname = String.valueOf(System.currentTimeMillis()) +".webp";
-                                File file = new File (myDir, fname);
-                                if (file.exists ()) file.delete ();
-                                try {
-                                    FileOutputStream out = new FileOutputStream(file);
-                                    bitmapResize.compress(Bitmap.CompressFormat.WEBP, 95, out);
-                                    out.flush();
-                                    out.close();
-
-                                    Log.i("Number Image",String.valueOf(numberPicture));
-                                    ScaleBitmap.scaleBitmap(file);
-                                    callBackImage.callbackImage(file.getPath());
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            } } ).start();
-                        } else {
-                            Toast.makeText(CameraActivity.this, "Bạn phải chụp ảnh ngang", Toast.LENGTH_LONG).show();
-                        }
                     }
                 });
             } catch (UnsupportedOperationException e) {
@@ -265,7 +246,7 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 
     }
     private void capturePicture() {
-        if (camera.isTakingPicture() || this.numberPicture > 14) return;
+//        if (camera.isTakingPicture() || this.numberPicture > 14) return;
 
         camera.takePicture();
 
