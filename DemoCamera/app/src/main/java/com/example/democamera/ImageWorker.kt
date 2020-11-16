@@ -22,7 +22,7 @@ class ImageInfor(var originalUrl: String, var resizeUrl: String, var thumbUrl: S
     var isProcessing: Boolean = false
 
     override fun toString(): String {
-        return "$originalUrl\n$resizeUrl\n$thumbUrl";
+        return originalUrl + "\n" + resizeUrl + "\n" + this.thumbUrl
     }
 }
 
@@ -47,11 +47,11 @@ class ImageWorker(var directory: File) {
     }
 
     fun getInfor(bitmap: Bitmap) {
-        val fName = System.currentTimeMillis().toString();
-
-        val originalName = "$fName.webp";
-        val thumbName = fName + "_thumb" + ".webp";
-        val resizeName = fName + "_resize" + ".webp";
+        val fName = System.currentTimeMillis().toString()
+        val extension = ".webp"
+        val originalName = fName + extension
+        val thumbName = fName + "_thumb" + extension
+        val resizeName = fName + "_resize" + extension
 
         val originalFile = File(directory, originalName)
         val thumbFile = File(directory, thumbName)
